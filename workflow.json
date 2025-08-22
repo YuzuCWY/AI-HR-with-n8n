@@ -1,0 +1,417 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0ec232f10594a22583d4fbb3741a07b3d5364c1b745b672a983e1f801dbe0e26"
+  },
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "53f2ee1a-d8b8-4c4b-aafa-dd56645c828a",
+      "name": "Read PDF",
+      "type": "n8n-nodes-base.readPDF",
+      "position": [
+        1140,
+        380
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $binary.data.fileExtension }}",
+              "value2": "pdf"
+            }
+          ]
+        }
+      },
+      "id": "ecda8fed-8b78-4ef8-8f63-2acdf34e9192",
+      "name": "Is PDF",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        900,
+        460
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {},
+      "id": "bc2845bd-cf30-4dd5-bf0d-294eee445564",
+      "name": "Not a PDF",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1140,
+        580
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "jsCode": "// https://community.n8n.io/t/iterating-over-email-attachments/13588/3\nlet results = [];\n\nfor (const item of $input.all()) {\n  for (key of Object.keys(item.binary)) {\n        results.push({\n            json: {},\n            binary: {\n                data: item.binary[key],\n            }\n        });\n    }\n}\n\nreturn results;"
+      },
+      "id": "226f86b0-0375-4555-91ab-c8a0dea93801",
+      "name": "Iterate over email attachments",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        680,
+        380
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {
+          "clashHandling": {
+            "values": {
+              "resolveClash": "preferInput1"
+            }
+          }
+        }
+      },
+      "id": "98b69fd2-0ebe-4b62-a3c7-d70f3ad8b393",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        1800,
+        440
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {
+          "dataPropertyAttachmentsPrefixName": "attachment_",
+          "downloadAttachments": true
+        }
+      },
+      "id": "6d3aadea-8bac-4e2f-9ba6-5344174232bc",
+      "name": "On email received",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        180,
+        360
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "4ahp4r1vzgeBGzie",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $('On email received').item.binary.isNotEmpty() }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "ba0be137-11e8-47af-96a4-29be60fb4877",
+      "name": "Has attachments?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        440,
+        460
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {},
+      "id": "06ec3984-b615-440f-854a-38dc51891b4c",
+      "name": "There are no attachments",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        680,
+        600
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "model": "llama3:latest",
+        "options": {}
+      },
+      "id": "1aca83fb-7ea3-4f97-b783-1534a45446df",
+      "name": "Ollama Model",
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "typeVersion": 1,
+      "position": [
+        1420,
+        480
+      ],
+      "credentials": {
+        "ollamaApi": {
+          "id": "qcQUmwXgE04yt8NU",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "f0572cca-ff4e-49d1-8da3-d7993fa13525",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7284ea99-3426-447c-bf40-adfa74153718",
+      "name": "Filter",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        440,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "binaryData": true,
+        "name": "={{ $binary.data.fileName }}",
+        "options": {}
+      },
+      "id": "5aafebd0-4170-4dba-9bbf-95fea9f172c5",
+      "name": "Upload file to folder1",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        2080,
+        440
+      ],
+      "typeVersion": 2,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Q621CZvPcwrBmMj9",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "title": "n8n Community Meetup",
+        "start": "2021-06-11T15:30:00.000Z",
+        "end": "2021-06-11T16:15:00.000Z",
+        "additionalFields": {}
+      },
+      "name": "iCalendar1",
+      "type": "n8n-nodes-base.iCal",
+      "position": [
+        2380,
+        420
+      ],
+      "typeVersion": 1,
+      "id": "50e3de8b-904b-4fc9-984e-adf4a512f7be"
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('Has attachments?').item.json.id }}",
+        "emailType": "text",
+        "message": "Hi, you are invited to an interview",
+        "options": {
+          "replyToSenderOnly": true
+        }
+      },
+      "id": "95a28b77-01e2-4c99-9f14-32a0311b8a61",
+      "name": "Gmail1",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2720,
+        20
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "4ahp4r1vzgeBGzie",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "binaryPropertyName": "={{ $json.from.value[0].address }}",
+        "destinationKey": "={{ $('On email received1')}}",
+        "options": {
+          "encoding": "utf8",
+          "keepSource": "json"
+        }
+      },
+      "id": "3e81683d-ee18-4198-b08f-d2a379922284",
+      "name": "Extract from File1",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        680,
+        60
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=請解析履歷內容文字 {{ $json.text }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "根據求職者的履歷，判斷其是否符合以下網頁設計職位的要求：  1. 能否使用HTML、CSS、Javascript來建立或設計網頁？ True / False 2. 是否有構建並調整網頁布局的經驗？ True / False 3. 是否有優化網頁內容以提高搜索引擎排名的經驗？ True / False 4. 能否應用SEO策略來提高網頁的可發現性？ True / False 5. 求職者是否具有撰寫吸引且符合公司品牌風格的網頁內容的能力？ True / False 6. 能否以讀者為導向並保持內容清晰明瞭？ True / False 7. 是否瞭解和應用了響應式網頁設計的最佳實踐？ True / False 8. 能否確保網頁在各種設備上都能夠正常顯示和操作？ True / False 9. 是否有與設計師、開發人員和其他團隊成員合作的經驗？ True / False 10. 能否有效地在團隊中溝通和協作？ True / False  判斷結果： 若求職者符合至少6項以上條件，輸出 True，表示錄用； 若不符合至少6項條件，輸出 False，表示拒絕。只能輸出True或False。只能輸出True或False。只能輸出True或False。"
+            }
+          ]
+        }
+      },
+      "id": "c6a7cdb7-598d-4dd1-94f7-cb20f0a70f76",
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        1400,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Read PDF": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Is PDF": {
+      "main": [
+        [
+          {
+            "node": "Read PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not a PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Iterate over email attachments": {
+      "main": [
+        [
+          {
+            "node": "Is PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Upload file to folder1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On email received": {
+      "main": [
+        [
+          {
+            "node": "Has attachments?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has attachments?": {
+      "main": [
+        [
+          {
+            "node": "Iterate over email attachments",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "There are no attachments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file to folder1": {
+      "main": [
+        [
+          {
+            "node": "iCalendar1",
+            "type": "main",
+            "index": 0
+          }
+      
